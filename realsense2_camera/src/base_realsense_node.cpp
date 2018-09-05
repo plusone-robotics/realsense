@@ -21,7 +21,9 @@ BaseRealSenseNode::BaseRealSenseNode(ros::NodeHandle& nodeHandle,
     _pnh(privateNodeHandle), _json_file_path(""),
     _serial_no(serial_no), _base_frame_id(""),
     _intialize_time_base(false),
-    _namespace(getNamespaceStr())
+    _namespace(getNamespaceStr()),
+    disparity_in(std::unique_ptr<rs2::disparity_transform>(new rs2::disparity_transform(true))),
+    disparity_out(std::unique_ptr<rs2::disparity_transform>(new rs2::disparity_transform(false)))
 {
     // Types for depth stream
     _is_frame_arrived[DEPTH] = false;
@@ -729,6 +731,19 @@ void BaseRealSenseNode::setupStreams()
                                      _image_publishers, _seq,
                                      _camera_info, _optical_frame_id,
                                      _encoding);
+                        if (_align_depth && stream_type != RS2_STREAM_DEPTH)
+                        {
+                            frames.push_back(f);
+                        }
+                        else
+                        {
+                            f = disparity_in->process(f);
+                            f = spatial.process(f);
+                            f = temporal.process(f);
+                            f = disparity_out->process(f);
+                            depth_frame = f;
+                            is_depth_arrived = true;
+                        }
                     }
 
                     if (_align_depth && is_depth_arrived)
