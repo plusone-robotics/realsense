@@ -751,6 +751,18 @@ void BaseRealSenseNode::setupStreams()
                         ROS_DEBUG("publishAlignedDepthToOthers(...)");
                         publishAlignedDepthToOthers(frameset, t);
                     }
+
+                    if(_pointcloud && (0 != _pointcloud_publisher.getNumSubscribers()))
+                    {
+                      ROS_DEBUG("publishPCTopic(...)");
+                      publishRgbToDepthPCTopic(t, is_frame_arrived, true);
+                    }
+
+                    if(_pointcloud && (0 != _raw_pointcloud_publisher.getNumSubscribers()))
+                    {
+                      ROS_DEBUG("publishPCTopic(...)");
+                      publishRgbToDepthPCTopic(t, is_frame_arrived, false);
+                    }
                 }
                 else
                 {
@@ -769,6 +781,7 @@ void BaseRealSenseNode::setupStreams()
                                  _camera_info, _optical_frame_id,
                                  _encoding);
                 }
+
             }
             catch(const std::exception& ex)
             {
@@ -1185,7 +1198,7 @@ void BaseRealSenseNode::publishStaticTransforms()
     }
 }
 
-rs2::frame BaseRealSenseNode::get_frame(const rs2::frameset& frameset, const rs2_stream stream, const int index)
+void BaseRealSenseNode::publishRgbToDepthPCTopic(const ros::Time& t, const std::map<stream_index_pair, bool>& is_frame_arrived , bool colorized_pointcloud)
 {
     rs2::frame f;
     frameset.foreach([&f, index, stream](const rs2::frame& frame) {
@@ -1234,65 +1247,137 @@ void BaseRealSenseNode::publishPointCloud(rs2::points pc, const ros::Time& t, co
             num_valid_points++;
         }
     }
-
+    auto depth_intrinsics = _stream_intrinsics[DEPTH];
     sensor_msgs::PointCloud2 msg_pointcloud;
     msg_pointcloud.header.stamp = t;
     msg_pointcloud.header.frame_id = _optical_frame_id[DEPTH];
     msg_pointcloud.width = num_valid_points;
     msg_pointcloud.height = 1;
     msg_pointcloud.is_dense = true;
-
     sensor_msgs::PointCloud2Modifier modifier(msg_pointcloud);
 
-    modifier.setPointCloud2Fields(4,
-                                  "x", 1, sensor_msgs::PointField::FLOAT32,
-                                  "y", 1, sensor_msgs::PointField::FLOAT32,
-                                  "z", 1, sensor_msgs::PointField::FLOAT32,
-                                  "rgb", 1, sensor_msgs::PointField::FLOAT32);
-    modifier.setPointCloud2FieldsByString(2, "xyz", "rgb");
-
-    sensor_msgs::PointCloud2Iterator<float>iter_x(msg_pointcloud, "x");
-    sensor_msgs::PointCloud2Iterator<float>iter_y(msg_pointcloud, "y");
-    sensor_msgs::PointCloud2Iterator<float>iter_z(msg_pointcloud, "z");
-
-    sensor_msgs::PointCloud2Iterator<uint8_t>iter_r(msg_pointcloud, "r");
-    sensor_msgs::PointCloud2Iterator<uint8_t>iter_g(msg_pointcloud, "g");
-    sensor_msgs::PointCloud2Iterator<uint8_t>iter_b(msg_pointcloud, "b");
-
-    // Fill the PointCloud2 fields
-    const rs2::vertex* vertex = pc.get_vertices();
-    color_point = pc.get_texture_coordinates();
-
-    float color_pixel[2];
-    for (size_t point_idx=0; point_idx < pc.size(); vertex++, point_idx++, color_point++)
+    if(colorized_pointcloud)
     {
-        float i(0), j(0);
-        if (use_texture)
-        {
-            i = static_cast<float>(color_point->u);
-            j = static_cast<float>(color_point->v);
-        }
-        if (i >= 0.f && i <= 1.f && j >= 0.f && j <= 1.f)
-        {
-            *iter_x = vertex->x;
-            *iter_y = vertex->y;
-            *iter_z = vertex->z;
-
-            color_pixel[0] = i * texture_width;
-            color_pixel[1] = j * texture_height;
-
-            int pixx = static_cast<int>(color_pixel[0]);
-            int pixy = static_cast<int>(color_pixel[1]);
-            int offset = (pixy * texture_width + pixx) * 3;
-            *iter_r = static_cast<uint8_t>(color_data[offset]);
-            *iter_g = static_cast<uint8_t>(color_data[offset + 1]);
-            *iter_b = static_cast<uint8_t>(color_data[offset + 2]);
-
-            ++iter_x; ++iter_y; ++iter_z;
-            ++iter_r; ++iter_g; ++iter_b;
-        }
+        modifier.setPointCloud2Fields(4,
+                                      "x", 1, sensor_msgs::PointField::FLOAT32,
+                                      "y", 1, sensor_msgs::PointField::FLOAT32,
+                                      "z", 1, sensor_msgs::PointField::FLOAT32,
+                                      "rgb", 1, sensor_msgs::PointField::FLOAT32);
+        modifier.setPointCloud2FieldsByString(2, "xyz", "rgb");
+        publishITRTopic(msg_pointcloud, colorized_pointcloud);
     }
-    _pointcloud_publisher.publish(msg_pointcloud);
+    else
+    {
+        modifier.setPointCloud2Fields(3,
+                                      "x", 1, sensor_msgs::PointField::FLOAT32,
+                                      "y", 1, sensor_msgs::PointField::FLOAT32,
+                                      "z", 1, sensor_msgs::PointField::FLOAT32);
+        modifier.setPointCloud2FieldsByString(1, "xyz");
+        publishITRTopic(msg_pointcloud, colorized_pointcloud);
+    }
+}
+
+void BaseRealSenseNode::publishITRTopic(sensor_msgs::PointCloud2& msg_pointcloud, bool colorized_pointcloud)
+{
+    auto& depth2color_extrinsics = _depth_to_other_extrinsics[COLOR];
+    auto color_intrinsics = _stream_intrinsics[COLOR];
+    auto depth_intrinsics = _stream_intrinsics[DEPTH];
+    auto image_depth16 = reinterpret_cast<const uint16_t*>(_image[DEPTH].data);
+    unsigned char* color_data = _image[COLOR].data;
+    const float MIN_DEPTH_THRESHOLD = 0.f;
+    const float MAX_DEPTH_THRESHOLD = 5.f;
+    float depth_point[3], scaled_depth;
+
+    if (colorized_pointcloud)
+    {
+        sensor_msgs::PointCloud2Iterator<float>iter_x(msg_pointcloud, "x");
+        sensor_msgs::PointCloud2Iterator<float>iter_y(msg_pointcloud, "y");
+        sensor_msgs::PointCloud2Iterator<float>iter_z(msg_pointcloud, "z");
+        sensor_msgs::PointCloud2Iterator<uint8_t>iter_r(msg_pointcloud, "r");
+        sensor_msgs::PointCloud2Iterator<uint8_t>iter_g(msg_pointcloud, "g");
+        sensor_msgs::PointCloud2Iterator<uint8_t>iter_b(msg_pointcloud, "b");
+
+        // Fill the PointCloud2 fields
+        for (int y = 0; y < depth_intrinsics.height; ++y)
+        {
+            for (int x = 0; x < depth_intrinsics.width; ++x)
+            {
+                scaled_depth = static_cast<float>(*image_depth16) * _depth_scale_meters;
+                float depth_pixel[2] = {static_cast<float>(x), static_cast<float>(y)};
+                rs2_deproject_pixel_to_point(depth_point, &depth_intrinsics, depth_pixel, scaled_depth);
+
+                if (depth_point[2] <= MIN_DEPTH_THRESHOLD || depth_point[2] > MAX_DEPTH_THRESHOLD)
+                {
+                    depth_point[0] = MIN_DEPTH_THRESHOLD;
+                    depth_point[1] = MIN_DEPTH_THRESHOLD;
+                    depth_point[2] = MIN_DEPTH_THRESHOLD;
+                }
+
+                *iter_x = depth_point[0];
+                *iter_y = depth_point[1];
+                *iter_z = depth_point[2];
+
+                float color_point[3], color_pixel[2];
+
+                rs2_transform_point_to_point(color_point, &depth2color_extrinsics, depth_point);
+                rs2_project_point_to_pixel(color_pixel, &color_intrinsics, color_point);
+
+                if (color_pixel[1] < MIN_DEPTH_THRESHOLD || color_pixel[1] > color_intrinsics.height
+                    || color_pixel[0] < MIN_DEPTH_THRESHOLD || color_pixel[0] > color_intrinsics.width)
+                {
+                    // For out of bounds color data, default to a shade of blue in order to visually distinguish holes.
+                    // This color value is same as the librealsense out of bounds color value.
+                    *iter_r = static_cast<uint8_t>(96);
+                    *iter_g = static_cast<uint8_t>(157);
+                    *iter_b = static_cast<uint8_t>(198);
+                }
+                else
+                {
+                    auto i = static_cast<int>(color_pixel[0]);
+                    auto j = static_cast<int>(color_pixel[1]);
+
+                    auto offset = i * 3 + j * color_intrinsics.width * 3;
+                    *iter_r = static_cast<uint8_t>(color_data[offset]);
+                    *iter_g = static_cast<uint8_t>(color_data[offset + 1]);
+                    *iter_b = static_cast<uint8_t>(color_data[offset + 2]);
+                }
+
+                ++image_depth16;
+                ++iter_x; ++iter_y; ++iter_z;
+                ++iter_r; ++iter_g; ++iter_b;
+            }
+        }
+        _pointcloud_publisher.publish(msg_pointcloud);
+    }
+    else
+    {
+        sensor_msgs::PointCloud2Iterator<float>iter_x(msg_pointcloud, "x");
+        sensor_msgs::PointCloud2Iterator<float>iter_y(msg_pointcloud, "y");
+        sensor_msgs::PointCloud2Iterator<float>iter_z(msg_pointcloud, "z");
+
+        for (int y = 0; y < depth_intrinsics.height; ++y)
+        {
+            for (int x = 0; x < depth_intrinsics.width; ++x)
+            {
+                scaled_depth = static_cast<float>(*image_depth16) * _depth_scale_meters;
+                float depth_pixel[2] = {static_cast<float>(x), static_cast<float>(y)};
+                rs2_deproject_pixel_to_point(depth_point, &depth_intrinsics, depth_pixel, scaled_depth);
+                if (depth_point[2] <= MIN_DEPTH_THRESHOLD || depth_point[2] > MAX_DEPTH_THRESHOLD)
+                {
+                    depth_point[0] = MIN_DEPTH_THRESHOLD;
+                    depth_point[1] = MIN_DEPTH_THRESHOLD;
+                    depth_point[2] = MIN_DEPTH_THRESHOLD;
+                }
+                *iter_x = depth_point[0];
+                *iter_y = depth_point[1];
+                *iter_z = depth_point[2];
+
+                ++image_depth16;
+                ++iter_x; ++iter_y; ++iter_z;
+            }
+        }
+        _raw_pointcloud_publisher.publish(msg_pointcloud);
+    }
 }
 
 
