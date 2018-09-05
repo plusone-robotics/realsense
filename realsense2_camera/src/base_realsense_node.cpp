@@ -446,182 +446,69 @@ void BaseRealSenseNode::publishAlignedDepthToOthers(rs2::frameset frames, const 
 
 void BaseRealSenseNode::enable_devices()
 {
-	for (auto& streams : IMAGE_STREAMS)
-	{
-		for (auto& elem : streams)
-		{
-			if (_enable[elem])
-			{
-				auto& sens = _sensors[elem];
-				auto profiles = sens.get_stream_profiles();
-				for (auto& profile : profiles)
-				{
-					auto video_profile = profile.as<rs2::video_stream_profile>();
-					ROS_DEBUG_STREAM("Sensor profile: " <<
-									 "Format: " << video_profile.format() <<
-									 ", Width: " << video_profile.width() <<
-									 ", Height: " << video_profile.height() <<
-									 ", FPS: " << video_profile.fps());
-
-					if (video_profile.format() == _format[elem] &&
-						(_width[elem] == 0 || video_profile.width() == _width[elem]) &&
-						(_height[elem] == 0 || video_profile.height() == _height[elem]) &&
-						(_fps[elem] == 0 || video_profile.fps() == _fps[elem]) &&
-						video_profile.stream_index() == elem.second)
-					{
-						_width[elem] = video_profile.width();
-						_height[elem] = video_profile.height();
-						_fps[elem] = video_profile.fps();
-
-						_enabled_profiles[elem].push_back(profile);
-
-						_image[elem] = cv::Mat(_height[elem], _width[elem], _image_format[elem], cv::Scalar(0, 0, 0));
-
-						ROS_INFO_STREAM(_stream_name[elem] << " stream is enabled - width: " << _width[elem] << ", height: " << _height[elem] << ", fps: " << _fps[elem]);
-						break;
-					}
-				}
-				if (_enabled_profiles.find(elem) == _enabled_profiles.end())
-				{
-					ROS_WARN_STREAM("Given stream configuration is not supported by the device! " <<
-						" Stream: " << rs2_stream_to_string(elem.first) <<
-						", Stream Index: " << elem.second <<
-						", Format: " << _format[elem] <<
-						", Width: " << _width[elem] <<
-						", Height: " << _height[elem] <<
-						", FPS: " << _fps[elem]);
-					_enable[elem] = false;
-				}
-			}
-		}
-	}
-	if (_align_depth)
-	{
-		for (auto& profiles : _enabled_profiles)
-		{
-			_depth_aligned_image[profiles.first] = cv::Mat(_height[DEPTH], _width[DEPTH], _image_format[DEPTH], cv::Scalar(0, 0, 0));
-		}
-	}
-}
-
-void BaseRealSenseNode::setupFilters()
-{
-    std::vector<std::string> filters_str;
-    boost::split(filters_str, _filters_str, [](char c){return c == ',';});
-    bool use_disparity_filter(false);
-    bool use_colorizer_filter(false);
-    for (std::vector<std::string>::const_iterator s_iter=filters_str.begin(); s_iter!=filters_str.end(); s_iter++)
+    for (auto& streams : IMAGE_STREAMS)
     {
-        if ((*s_iter) == "colorizer")
+        for (auto& elem : streams)
         {
-            use_colorizer_filter = true;
-        }
-        else if ((*s_iter) == "disparity")
-        {
-            use_disparity_filter = true;
-        }
-        else if ((*s_iter) == "spatial")
-        {
-            ROS_INFO("Add Filter: spatial");
-            _filters.push_back(NamedFilter("spatial", std::make_shared<rs2::spatial_filter>()));
-        }
-        else if ((*s_iter) == "temporal")
-        {
-            ROS_INFO("Add Filter: temporal");
-            _filters.push_back(NamedFilter("temporal", std::make_shared<rs2::temporal_filter>()));
-        }
-        else if ((*s_iter) == "decimation")
-        {
-            ROS_INFO("Add Filter: decimation");
-            _filters.push_back(NamedFilter("decimation", std::make_shared<rs2::decimation_filter>()));
-        }
-        else if ((*s_iter) == "pointcloud")
-        {
-            assert(_pointcloud); // For now, it is set in getParameters()..
-        }
-        else if ((*s_iter).size() > 0)
-        {
-            ROS_ERROR_STREAM("Unknown Filter: " << (*s_iter));
-            throw;
+            if (_enable[elem])
+            {
+                auto& sens = _sensors[elem];
+                auto profiles = sens.get_stream_profiles();
+                for (auto& profile : profiles)
+                {
+                    auto video_profile = profile.as<rs2::video_stream_profile>();
+                    ROS_DEBUG_STREAM("Sensor profile: " <<
+                                     "Format: " << video_profile.format() <<
+                                     ", Width: " << video_profile.width() <<
+                                     ", Height: " << video_profile.height() <<
+                                     ", FPS: " << video_profile.fps());
+
+                    if (video_profile.format() == _format[elem] &&
+                            (_width[elem] == 0 || video_profile.width() == _width[elem]) &&
+                            (_height[elem] == 0 || video_profile.height() == _height[elem]) &&
+                            (_fps[elem] == 0 || video_profile.fps() == _fps[elem]) &&
+                            video_profile.stream_index() == elem.second)
+                    {
+                        _width[elem] = video_profile.width();
+                        _height[elem] = video_profile.height();
+                        _fps[elem] = video_profile.fps();
+
+                        _enabled_profiles[elem].push_back(profile);
+
+                        _image[elem] = cv::Mat(_width[elem], _height[elem], _image_format[elem], cv::Scalar(0, 0, 0));
+
+                        ROS_INFO_STREAM(_stream_name[elem] << " stream is enabled - width: " << _width[elem] << ", height: " << _height[elem] << ", fps: " << _fps[elem]);
+                        break;
+                    }
+                }
+                if (_enabled_profiles.find(elem) == _enabled_profiles.end())
+                {
+                    ROS_WARN_STREAM("Given stream configuration is not supported by the device! " <<
+                                    " Stream: " << rs2_stream_to_string(elem.first) <<
+                                    ", Stream Index: " << elem.second <<
+                                    ", Format: " << _format[elem] <<
+                                    ", Width: " << _width[elem] <<
+                                    ", Height: " << _height[elem] <<
+                                    ", FPS: " << _fps[elem]);
+                    _enable[elem] = false;
+                }
+            }
         }
     }
-    if (use_disparity_filter)
+    if (_align_depth)
     {
-        ROS_INFO("Add Filter: disparity");
-        _filters.insert(_filters.begin(), NamedFilter("disparity_start", std::make_shared<rs2::disparity_transform>()));
-        _filters.push_back(NamedFilter("disparity_end", std::make_shared<rs2::disparity_transform>(false)));
-        ROS_INFO("Done Add Filter: disparity");
+        for (auto& profiles : _enabled_profiles)
+        {
+            _depth_aligned_image[profiles.first] = cv::Mat(_width[DEPTH], _height[DEPTH], _image_format[DEPTH], cv::Scalar(0, 0, 0));
+        }
     }
-    if (use_colorizer_filter)
-    {
-        ROS_INFO("Add Filter: colorizer");
-        _filters.push_back(NamedFilter("colorizer", std::make_shared<rs2::colorizer>()));
-
-        // Types for depth stream
-        _format[DEPTH] = _format[COLOR];   // libRS type
-        _image_format[DEPTH] = _image_format[COLOR];    // CVBridge type
-        _encoding[DEPTH] = _encoding[COLOR]; // ROS message type
-        _unit_step_size[DEPTH] = _unit_step_size[COLOR]; // sensor_msgs::ImagePtr row step size
-
-        _width[DEPTH] = _width[COLOR];
-        _height[DEPTH] = _height[COLOR];
-        _image[DEPTH] = cv::Mat(_height[DEPTH], _width[DEPTH], _image_format[DEPTH], cv::Scalar(0, 0, 0));
-    }
-    if (_pointcloud)
-    {
-    	ROS_INFO("Add Filter: pointcloud");
-        _filters.push_back(NamedFilter("pointcloud", std::make_shared<rs2::pointcloud>(_pointcloud_texture.first, _pointcloud_texture.second)));
-    }
-    ROS_INFO("num_filters: %d", static_cast<int>(_filters.size()));
 }
 
 void BaseRealSenseNode::setupStreams()
 {
     ROS_INFO("setupStreams...");
+    enable_devices();
     try{
-        for (auto& streams : IMAGE_STREAMS)
-        {
-            for (auto& elem : streams)
-            {
-                if (_enable[elem])
-                {
-                    auto& sens = _sensors[elem];
-                    auto profiles = sens.get_stream_profiles();
-                    for (auto& profile : profiles)
-                    {
-                        auto video_profile = profile.as<rs2::video_stream_profile>();
-                        if (video_profile.format() == _format[elem] &&
-                            video_profile.width()  == _width[elem] &&
-                            video_profile.height() == _height[elem] &&
-                            video_profile.fps()    == _fps[elem] &&
-                            video_profile.stream_index() == elem.second)
-                        {
-                            _enabled_profiles[elem].push_back(profile);
-
-                            _image[elem] = cv::Mat(_width[elem], _height[elem], _image_format[elem], cv::Scalar(0, 0, 0));
-
-                            if (_align_depth)
-                                _depth_aligned_image[elem] = cv::Mat(_width[DEPTH], _height[DEPTH], _image_format[DEPTH], cv::Scalar(0, 0, 0));
-
-                            ROS_INFO_STREAM(_stream_name[elem] << " stream is enabled - width: " << _width[elem] << ", height: " << _height[elem] << ", fps: " << _fps[elem]);
-                            break;
-                        }
-                    }
-                    if (_enabled_profiles.find(elem) == _enabled_profiles.end())
-                    {
-                        ROS_WARN_STREAM("Given stream configuration is not supported by the device! " <<
-                                        " Stream: " << rs2_stream_to_string(elem.first) <<
-                                        ", Stream Index: " << elem.second <<
-                                        ", Format: " << _format[elem] <<
-                                        ", Width: " << _width[elem] <<
-                                        ", Height: " << _height[elem] <<
-                                        ", FPS: " << _fps[elem]);
-                        _enable[elem] = false;
-                    }
-                }
-            }
-        }
-
         // Publish image stream info
         for (auto& profiles : _enabled_profiles)
         {
@@ -810,18 +697,6 @@ void BaseRealSenseNode::setupStreams()
                         ROS_DEBUG("publishAlignedDepthToOthers(...)");
                         publishAlignedDepthToOthers(frameset, t);
                     }
-
-                    if(_pointcloud && (0 != _pointcloud_publisher.getNumSubscribers()))
-                    {
-                        ROS_DEBUG("publishPCTopic(...)");
-                        publishRgbToDepthPCTopic(t, is_frame_arrived, true);
-                    }
-
-                    if(_pointcloud && (0 != _raw_pointcloud_publisher.getNumSubscribers()))
-                    {
-                        ROS_DEBUG("publishPCTopic(...)");
-                        publishRgbToDepthPCTopic(t, is_frame_arrived, false);
-                    }
                 }
                 else
                 {
@@ -840,11 +715,23 @@ void BaseRealSenseNode::setupStreams()
                                  _camera_info, _optical_frame_id,
                                  _encoding);
                 }
-          }
-          catch(const std::exception& ex)
-          {
-              ROS_ERROR_STREAM("An error has occurred during frame callback: " << ex.what());
-          }
+
+                if(_pointcloud && (0 != _pointcloud_publisher.getNumSubscribers()))
+                {
+                    ROS_DEBUG("publishPCTopic(...)");
+                    publishRgbToDepthPCTopic(t, is_frame_arrived, true);
+                }
+
+                if(_pointcloud && (0 != _raw_pointcloud_publisher.getNumSubscribers()))
+                {
+                    ROS_DEBUG("publishPCTopic(...)");
+                    publishRgbToDepthPCTopic(t, is_frame_arrived, false);
+                }
+            }
+            catch(const std::exception& ex)
+            {
+                ROS_ERROR_STREAM("An error has occurred during frame callback: " << ex.what());
+            }
         }; // frame_callback
 
         // Streaming IMAGES
@@ -900,7 +787,7 @@ void BaseRealSenseNode::setupStreams()
                     for (rs2::stream_profile& profile : profiles)
                     {
                         if (profile.fps() == _fps[elem] &&
-                            profile.format() == _format[elem])
+                                profile.format() == _format[elem])
                         {
                             _enabled_profiles[elem].push_back(profile);
                             break;
@@ -914,7 +801,7 @@ void BaseRealSenseNode::setupStreams()
         auto accel_profile = _enabled_profiles.find(ACCEL);
 
         if (gyro_profile != _enabled_profiles.end() &&
-            accel_profile != _enabled_profiles.end())
+                accel_profile != _enabled_profiles.end())
         {
             std::vector<rs2::stream_profile> profiles;
             profiles.insert(profiles.begin(), gyro_profile->second.begin(), gyro_profile->second.end());
@@ -934,7 +821,7 @@ void BaseRealSenseNode::setupStreams()
 
                 auto stream_index = (stream == GYRO.first)?GYRO:ACCEL;
                 if (0 != _info_publisher[stream_index].getNumSubscribers() ||
-                    0 != _imu_publishers[stream_index].getNumSubscribers())
+                        0 != _imu_publishers[stream_index].getNumSubscribers())
                 {
                     double elapsed_camera_ms = (/*ms*/ frame.get_timestamp() - /*ms*/ _camera_time_base) / /*ms to seconds*/ 1000;
                     ros::Time t(_ros_time_base.toSec() + elapsed_camera_ms);
@@ -984,42 +871,38 @@ void BaseRealSenseNode::setupStreams()
         }
 
         if (_enable[DEPTH] &&
-            _enable[FISHEYE])
+                _enable[FISHEYE])
         {
             static const char* frame_id = "depth_to_fisheye_extrinsics";
             auto ex = getRsExtrinsics(DEPTH, FISHEYE);
             _depth_to_other_extrinsics[FISHEYE] = ex;
-
             _depth_to_other_extrinsics_publishers[FISHEYE].publish(rsExtrinsicsToMsg(ex, frame_id));
         }
 
         if (_enable[DEPTH] &&
-            _enable[COLOR])
+                _enable[COLOR])
         {
             static const char* frame_id = "depth_to_color_extrinsics";
             auto ex = getRsExtrinsics(DEPTH, COLOR);
             _depth_to_other_extrinsics[COLOR] = ex;
-
             _depth_to_other_extrinsics_publishers[COLOR].publish(rsExtrinsicsToMsg(ex, frame_id));
         }
 
         if (_enable[DEPTH] &&
-            _enable[INFRA1])
+                _enable[INFRA1])
         {
             static const char* frame_id = "depth_to_infra1_extrinsics";
             auto ex = getRsExtrinsics(DEPTH, INFRA1);
             _depth_to_other_extrinsics[INFRA1] = ex;
-
             _depth_to_other_extrinsics_publishers[INFRA1].publish(rsExtrinsicsToMsg(ex, frame_id));
         }
 
         if (_enable[DEPTH] &&
-            _enable[INFRA2])
+                _enable[INFRA2])
         {
             static const char* frame_id = "depth_to_infra2_extrinsics";
             auto ex = getRsExtrinsics(DEPTH, INFRA2);
             _depth_to_other_extrinsics[INFRA2] = ex;
-
             _depth_to_other_extrinsics_publishers[INFRA2].publish(rsExtrinsicsToMsg(ex, frame_id));
         }
     }
