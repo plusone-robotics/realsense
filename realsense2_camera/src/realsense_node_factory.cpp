@@ -31,16 +31,15 @@ RealSenseNodeFactory::RealSenseNodeFactory()
 
 rs2::device RealSenseNodeFactory::getDevice(std::string& serial_no)
 {
+    rs2::device retDev;
     auto list = _ctx.query_devices();
-    if (0 == list.size())
+    if(0 == list.size())
     {
-        ROS_ERROR("No RealSense devices were found! Terminating RealSense Node...");
-        ros::shutdown();
-        exit(1);
+        ROS_ERROR("No RealSense devices were found! Looking for RealSense devices...");
+        return retDev;
     }
 
     bool found = false;
-    rs2::device retDev;
 
     for (auto&& dev : list)
     {
@@ -95,7 +94,6 @@ void RealSenseNodeFactory::onInit()
         std::cout << "Press <ENTER> key to continue." << std::endl;
         std::cin.get();
 #endif
-
         auto nh = getNodeHandle();
         auto privateNh = getPrivateNodeHandle();
         std::string serial_no("");
@@ -128,9 +126,82 @@ void RealSenseNodeFactory::onInit()
                     {
                     if (info.was_removed(_device))
                     {
-                    ROS_FATAL("The device has been disconnected! Terminating RealSense Node...");
-                    ros::shutdown();
-                    exit(1);
+                    ROS_WARN("The device has been disconnected! Looking for a new RealSense...");
+                    rs2::device retDev;
+                    std::string empty("");
+                    std::string serial_no("");
+
+                    try
+                    {
+                      serial_no = retDev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER);
+                    }
+                    catch(const std::exception& ex)
+                    {
+                      serial_no = "";
+                    }
+
+                    while(serial_no == empty)
+                    {
+                      ROS_WARN("Looking for new realsense");
+                      retDev = getDevice(serial_no);
+                    }
+                    auto nh = getNodeHandle();
+                    auto privateNh = getPrivateNodeHandle();
+                    _device = retDev;
+                    auto pid_str = _device.get_info(RS2_CAMERA_INFO_PRODUCT_ID);
+                    uint16_t pid;
+                    std::stringstream ss;
+                    ss << std::hex << pid_str;
+                    ss >> pid;
+                    switch(pid)
+                    {
+                        case SR300_PID:
+                            _realSenseNode = std::unique_ptr<SR300Node>(new SR300Node(nh, privateNh, _device, serial_no));
+                            break;
+                        case RS400_PID:
+                            _realSenseNode = std::unique_ptr<BaseD400Node>(new BaseD400Node(nh, privateNh, _device, serial_no));
+                            break;
+                        case RS405_PID:
+                            _realSenseNode = std::unique_ptr<BaseD400Node>(new BaseD400Node(nh, privateNh, _device, serial_no));
+                            break;
+                        case RS410_PID:
+                        case RS460_PID:
+                            _realSenseNode = std::unique_ptr<BaseD400Node>(new BaseD400Node(nh, privateNh, _device, serial_no));
+                            break;
+                        case RS415_PID:
+                            _realSenseNode = std::unique_ptr<RS415Node>(new RS415Node(nh, privateNh, _device, serial_no));
+                            break;
+                        case RS420_PID:
+                            _realSenseNode = std::unique_ptr<BaseD400Node>(new BaseD400Node(nh, privateNh, _device, serial_no));
+                            break;
+                        case RS420_MM_PID:
+                            _realSenseNode = std::unique_ptr<BaseD400Node>(new BaseD400Node(nh, privateNh, _device, serial_no));
+                            break;
+                        case RS430_PID:
+                            _realSenseNode = std::unique_ptr<BaseD400Node>(new BaseD400Node(nh, privateNh, _device, serial_no));
+                            break;
+                        case RS430_MM_PID:
+                            _realSenseNode = std::unique_ptr<BaseD400Node>(new BaseD400Node(nh, privateNh, _device, serial_no));
+                            break;
+                        case RS430_MM_RGB_PID:
+                            _realSenseNode = std::unique_ptr<BaseD400Node>(new BaseD400Node(nh, privateNh, _device, serial_no));
+                            break;
+                        case RS435_RGB_PID:
+                            _realSenseNode = std::unique_ptr<RS435Node>(new RS435Node(nh, privateNh, _device, serial_no));
+                            break;
+                        case RS_USB2_PID:
+                            _realSenseNode = std::unique_ptr<BaseD400Node>(new BaseD400Node(nh, privateNh, _device, serial_no));
+                            break;
+                        default:
+                            ROS_FATAL_STREAM("Unsupported device!" << " Product ID: 0x" << pid_str);
+                            ros::shutdown();
+                            exit(1);
+                    }
+                   _device = retDev;
+                    assert(_realSenseNode);
+                    _realSenseNode->publishTopics();
+                    _realSenseNode->registerDynamicReconfigCb();
+                    ROS_WARN("Found a new realsense, reconnecting...");
                     }
                     });
 
