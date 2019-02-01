@@ -28,6 +28,7 @@
 #include <mutex>
 #include <condition_variable>
 
+
 namespace realsense2_camera
 {
     const stream_index_pair COLOR{RS2_STREAM_COLOR, 0};
