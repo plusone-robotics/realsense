@@ -1,7 +1,6 @@
 sudo: required
 dist: xenial
 
-  # - git clone -v --progress https://github.com/doronhi/realsense.git  # This is Done automatically by TravisCI
 before_install:
   - sudo ./.install_dependency.sh
   
@@ -39,11 +38,11 @@ install:
   # Run test:
 script:
   - python src/realsense/realsense2_camera/scripts/rs2_test.py --all
-  
  
 before_cache:
   - rm -f  $HOME/.gradle/caches/modules-2/modules-2.lock
   - rm -fr $HOME/.gradle/caches/*/plugin-resolution/
+
 cache:
   directories:
     - $HOME/.gradle/caches/
