@@ -8,7 +8,8 @@
 
 COMMAND="deb http://realsense-hw-public.s3.amazonaws.com/Debian/apt-repo $(lsb_release -sc) main"
 echo $COMMAND | tee /etc/apt/sources.list.d/realsense-public.list
-add-apt-repository "$COMMAND"
 apt-get update -qq
+apt-get install software-properties-common -y  # On Ubuntu Bionic, add-apt-repository is not installed by default. 
+add-apt-repository "$COMMAND"
 apt-get install librealsense2-dkms --allow-unauthenticated -y 
 apt-get install librealsense2-dev --allow-unauthenticated -y
