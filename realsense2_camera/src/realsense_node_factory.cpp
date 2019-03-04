@@ -179,7 +179,7 @@ void RealSenseNodeFactory::onInit()
                     {
                     if (info.was_removed(_device))
                     {
-                    ROS_WARN("The device has been disconnected! Looking for a new RealSense...");
+                    ROS_WARN("The device has been disconnected! Trying to reconnect to a RealSense...");
                     rs2::device retDev;
                     std::string empty("");
                     std::string serial_no("");
