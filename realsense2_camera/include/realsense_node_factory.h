@@ -81,6 +81,8 @@ namespace realsense2_camera
         virtual void onInit() override;
         void tryGetLogSeverity(rs2_log_severity& severity) const;
 
+        void setupRealsenseNode(rs2::device&, ros::NodeHandle&, ros::NodeHandle&, std::string&, std::unique_ptr<InterfaceRealSenseNode>&);
+
         std::unique_ptr<InterfaceRealSenseNode> _realSenseNode;
         rs2::device _device;
         rs2::context _ctx;
