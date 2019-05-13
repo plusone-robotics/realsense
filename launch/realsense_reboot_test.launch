@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<launch>
+
+  <arg name="itr" default="300" doc="Number of iterations to reboot system for test"/>
+  <arg name="logfile" default="realsense.log" doc="name of logfile to be placed at <HOME> dir"/>
+  <arg name="cam1_serial" default="746112060759" doc="Serial number of camera 1 connected"/>
+  <arg name="cam2_serial" default="746112061703" doc="Serial number of camera 2 connected"/>
+  <arg name="sleep" default="4" doc="Time(minutes) to sleep before reboot"/>
+  <arg name="cam1_topic" default="/pick/depth_registered/point" doc="The topic to monitor on camera 1 for successful operation"/>
+  <arg name="cam2_topic" default="/place/depth_registered/point" doc="The topic to monitor on camera 2 for successful operation"/>
+
+  <node name="realsense_reboot_test" pkg="realsense_test" type="realsense_reboot_test.sh" output="screen" required="true" args="${arg itr} ${arg logfile} ${arg cam1_serial} ${arg cam2_serial} ${arg sleep} ${arg cam1_topic} ${arg cam2_topic}"/>
+
+</launch>

@@ -1,0 +1,73 @@
+rgb_camera/auto_exposure_priority: false
+rgb_camera/backlight_compensation: false
+rgb_camera/brightness: 0
+rgb_camera/contrast: 50
+rgb_camera/enable_auto_exposure: false
+rgb_camera/enable_auto_white_balance: false
+rgb_camera/exposure: 166
+rgb_camera/frames_queue_size: 16
+rgb_camera/gain: 64
+rgb_camera/gamma: 300
+rgb_camera/hue: 0
+rgb_camera/power_line_frequency: 2
+rgb_camera/saturation: 64
+rgb_camera/sharpness: 50
+rgb_camera/white_balance: 4600.0
+
+stereo_module/emitter_enabled: true
+stereo_module/enable_auto_exposure: false
+stereo_module/enable_auto_white_balance: false
+stereo_module/error_polling_enabled: true
+stereo_module/exposure: 20000
+stereo_module/frames_queue_size: 16
+stereo_module/gain: 16
+stereo_module/inter_cam_sync_mode: 0.0
+stereo_module/laser_power: 120.0
+stereo_module/output_trigger_enabled: false
+stereo_module/visual_preset: 0
+
+colorizer/color_scheme: 0
+colorizer/frames_queue_size: 16
+colorizer/histogram_equalization_enabled: true
+colorizer/max_distance: 6.0
+colorizer/min_distance: 0.0
+colorizer/stream_filter: 1
+colorizer/stream_format_filter: 1
+colorizer/stream_index_filter: 0
+colorizer/visual_preset: 0
+
+spatial/filter_magnitude: 2
+spatial/filter_smooth_alpha: 0.5
+spatial/filter_smooth_delta: 20
+spatial/frames_queue_size: 16
+spatial/holes_fill: 0
+spatial/stream_filter: 1
+spatial/stream_format_filter: 1
+spatial/stream_index_filter: 0
+
+decimation/filter_magnitude: 2
+decimation/frames_queue_size: 16
+decimation/stream_filter: 1
+decimation/stream_format_filter: 1
+decimation/stream_index_filter: 0
+
+hole_filling/frames_queue_size: 16
+hole_filling/holes_fill: 1
+hole_filling/stream_filter: 1
+hole_filling/stream_format_filter: 1
+hole_filling/stream_index_filter: 0
+
+pointcloud/filter_magnitude: 0
+pointcloud/frames_queue_size: 16
+pointcloud/stream_filter: 3
+pointcloud/stream_format_filter: 0
+pointcloud/stream_index_filter: 1
+
+spatial/filter_magnitude: 2
+spatial/filter_smooth_alpha: 0.5
+spatial/filter_smooth_delta: 20
+spatial/frames_queue_size: 16
+spatial/holes_fill: 0
+spatial/stream_filter: 1
+spatial/stream_format_filter: 1
+spatial/stream_index_filter: 0
