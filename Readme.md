@@ -8,14 +8,20 @@ The following assumes this is being run on a deployment ready IPC, with at least
 - Super user privileges are available
 - An `autoboot` user exists with `sudo` privileges
 
-#### Adding reboot w/o sudo to user
+#### Reboot w/o sudo for autoboot user
 ```
 sudo su
 echo "autoboot ALL=NOPASSWD: /sbin/reboot">>etc/sudoers
 ```
+#### Create workspace
+```
+mkdir -p ~/realsense_ws/src
+cd ~/realsense_ws/src
+git clone https://github.com/plusone-robotics/realsense.git
+```
 #### Installation
 ```
-cd realsense_test
+cd ~/realsense_ws
 sudo su
 source /opt/ros/kinetic/setup.bash
 catkin_make -DCMAKE_BUILD_TYPE=Release install -DCMAKE_INSTALL_PREFIX=/opt/por
@@ -23,7 +29,7 @@ exit
 ```
 #### Schedule a startup service
 ```
-cd realsense_test
+cd ~/realsense_ws
 source devel/setup.bash
 rosrun robot_upstart install realsense_test/launch/realsense_reboot_test.launch --provider systemd --user autoboot --setup /etc/ros/setup.bash
 sudo systemctl daemon-reload && sudo systemctl start realsense
