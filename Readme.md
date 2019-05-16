@@ -7,6 +7,7 @@ The following assumes this is being run on a deployment ready IPC, with at least
 - It is allowed to install files at `/opt/por`
 - Super user privileges are available
 - An `autoboot` user exists with `sudo` privileges
+- `librealsense v2.20.0` is installed from upstream (Intel)
 
 #### Reboot w/o sudo for autoboot user
 ```
@@ -54,7 +55,7 @@ If at any time, the use wants to interrupt the reboot test process, please do th
 ```
 sudo systemctl disable realsense.service
 ```
-This will disbale the service from starup. Once the system reboots again, the system should be usable in a normal state
+This will disable the service from startup. Once the system reboots again, the system should be usable in a normal state
 
 
 ## Modifications
