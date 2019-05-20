@@ -18,7 +18,7 @@ echo "autoboot ALL=NOPASSWD: /sbin/reboot">>etc/sudoers
 ```
 mkdir -p ~/realsense_ws/src
 cd ~/realsense_ws/src
-git clone https://github.com/plusone-robotics/realsense.git
+git clone -b am_realsense_test https://github.com/abhijitmajumdar/realsense.git
 ```
 #### Installation
 ```
