@@ -77,8 +77,6 @@ namespace realsense2_camera
         rs2::context _ctx;
         std::string _serial_no;
         bool _initial_reset;
-        std::thread _query_thread;
-        bool _is_alive;
         bool _initialized;
         double _data_timeout;
 

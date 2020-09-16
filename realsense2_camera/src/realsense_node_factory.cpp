@@ -24,7 +24,6 @@ constexpr auto realsense_ros_camera_version = REALSENSE_ROS_EMBEDDED_VERSION_STR
 PLUGINLIB_EXPORT_CLASS(realsense2_camera::RealSenseNodeFactory, nodelet::Nodelet)
 
 RealSenseNodeFactory::RealSenseNodeFactory() :
-	_is_alive(true),
 	_initialized(false)
 {
 	ROS_INFO("RealSense ROS v%s", REALSENSE_ROS_VERSION_STR);
@@ -44,11 +43,6 @@ RealSenseNodeFactory::~RealSenseNodeFactory()
 	{
 		_initialized = false;
 		_data_monitor_timer.stop();
-		_is_alive = false;
-		if (_query_thread.joinable())
-		{
-			_query_thread.join();
-		}
 
 		_realSenseNode.reset();
 		if (_device)
@@ -125,6 +119,7 @@ void RealSenseNodeFactory::onInit()
 
 void RealSenseNodeFactory::initialize(const ros::WallTimerEvent &ignored)
 {
+	ROS_INFO("Initializing ...");
 	_device = rs2::device();
 	try
 	{
@@ -174,42 +169,34 @@ void RealSenseNodeFactory::initialize(const ros::WallTimerEvent &ignored)
 		}
 		else
 		{
-			_is_alive = true;
-			_query_thread = std::thread([=]()
-						{
-							ROS_DEBUG("Waiting for device...");
-
- 
-							std::chrono::milliseconds timespan(6000);
-							while (_is_alive && !_device)
-							{
-								ROS_DEBUG("Checking for device...");
-								_device = getDevice();
-								if (_device)
-								{
-									ROS_DEBUG("got device");
-									if (_initial_reset)
-									{
-										ROS_DEBUG("Resetting device...");
-										_initial_reset = false;
-										_device.hardware_reset();
-										std::this_thread::sleep_for(std::chrono::seconds(10));
-										_device = getDevice();
-									}
-									if (_device)
-									{
-										ROS_DEBUG("starting device...");
-										std::function<void(rs2::event_information&)> change_device_callback_function = [this](rs2::event_information& info){change_device_callback(info);};
-										_ctx.set_devices_changed_callback(change_device_callback_function);
-										StartDevice();
-									}
-								}
-								else
-								{
-									std::this_thread::sleep_for(timespan);
-								}
-							}
-						});
+			std::this_thread::sleep_for(std::chrono::seconds(2));
+			ROS_INFO("Checking for device...");
+			_device = getDevice();
+			if (_device)
+			{
+				ROS_DEBUG("got device");
+				if (_initial_reset)
+				{
+					ROS_INFO("Resetting device...");
+					_initial_reset = false;
+					_device.hardware_reset();
+					std::this_thread::sleep_for(std::chrono::seconds(10));
+					_device = getDevice();
+				}
+				if (_device)
+				{
+					ROS_DEBUG("starting device...");
+					std::function<void(rs2::event_information&)> change_device_callback_function = [this](rs2::event_information& info){change_device_callback(info);};
+					_ctx.set_devices_changed_callback(change_device_callback_function);
+					StartDevice();
+				}
+			}
+			else
+			{
+				ROS_ERROR("Failed to file device.  Driver exiting...");
+				shutdown();
+				return;
+			}
 
 			if (!_shutdown_srv)
 			{
@@ -372,12 +359,6 @@ bool RealSenseNodeFactory::reset()
 	_initialized = false;
 
 	_data_monitor_timer.stop();
-
-	_is_alive = false;
-	if (_query_thread.joinable())
-	{
-		_query_thread.join();
-	}
 
 	try
 	{
