@@ -1,0 +1,47 @@
+<launch>
+
+  <arg name="rgb_camera" default="infra1" doc="infra1/color"/>
+  <arg name="initial_reset" />
+  <arg name="config_yaml" default="$(find realsense_test)/config/realsense.yaml"/>
+  <arg name="config_json" default="$(find realsense_test)/config/realsense_high_accuracy_high_resolution.json"/>
+  <arg name="serial_no_camera1" />
+  <arg name="serial_no_camera2" />
+
+
+  <group ns="pick">
+    <include file="$(find realsense_test)/launch/sensor.launch">
+      <arg name="camera"              value="pick"/>
+      <arg name="tf_prefix"           value="pick_camera"/>
+      <arg name="manager"             value="realsense2_camera_manager"/>
+      <arg name="serial_no"           value="$(arg serial_no_camera1)"/>
+      <arg name="json_file_path"      value="$(arg config_json)"/>
+      <arg name="width"               value="640"/>
+      <arg name="height"              value="360"/>
+      <arg name="rgb_channel"         value="$(arg rgb_camera)"/>
+      <arg name="decimation_value"    value="2"/>
+      <arg name="filters"             value="decimation,disparity"/>
+      <arg name="initial_reset"       value="$(arg initial_reset)"/>
+    </include>
+    <!-- Configure parameters for the sensor -->
+    <rosparam command="load" file="$(arg config_yaml)" unless="$(eval config_yaml=='')"/>
+  </group>
+
+  <group ns="place">
+    <include file="$(find realsense_test)/launch/sensor.launch">
+      <arg name="camera"              value="place"/>
+      <arg name="tf_prefix"           value="place_camera"/>
+      <arg name="manager"             value="realsense2_camera_manager"/>
+      <arg name="serial_no"           value="$(arg serial_no_camera2)"/>
+      <arg name="json_file_path"      value="$(arg config_json)"/>
+      <arg name="width"               value="640"/>
+      <arg name="height"              value="360"/>
+      <arg name="rgb_channel"         value="$(arg rgb_camera)"/>
+      <arg name="decimation_value"    value="2"/>
+      <arg name="filters"             value="decimation,disparity"/>
+      <arg name="initial_reset"       value="$(arg initial_reset)"/>
+    </include>
+    <!-- Configure parameters for the sensor -->
+    <rosparam command="load" file="$(arg config_yaml)" unless="$(eval config_yaml=='')"/>
+  </group>
+
+</launch>

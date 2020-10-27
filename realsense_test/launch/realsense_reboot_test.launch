@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<launch>
+
+  <arg name="itr" default="300" doc="Number of iterations to reboot system for test"/>
+  <arg name="logfile" default="realsense.log" doc="name of logfile to be placed at HOME dir"/>
+  <arg name="cam1_serial" default="746112060759" doc="Serial number of camera 1 connected"/>
+  <arg name="cam2_serial" default="746112061703" doc="Serial number of camera 2 connected"/>
+  <arg name="sleep" default="4" doc="Time(minutes) to sleep before reboot"/>
+  <arg name="timeout" default="10" doc="Time(minutes) to timeout before declaring a faliure"/>
+  <arg name="cam1_topic" default="/pick/depth_registered/points" doc="The topic to monitor on camera 1 for successful operation"/>
+  <arg name="cam2_topic" default="/place/depth_registered/points" doc="The topic to monitor on camera 2 for successful operation"/>
+
+  <include file="$(find realsense_test)/launch/bolles_dual_d415.launch">
+    <arg name="serial_no_camera1" value="$(arg cam1_serial)"/>
+    <arg name="serial_no_camera2" value="$(arg cam2_serial)"/>
+    <arg name="initial_reset" value="true"/>
+  </include>
+
+  <node name="realsense_reboot_test" pkg="realsense_test" type="realsense_reboot_test.py" output="screen" required="true">
+    <param name="itreration_limit" value="$(arg itr)"/>
+    <param name="logfile" value="$(arg logfile)"/>
+    <param name="sleep" value="$(arg sleep)"/>
+    <param name="timeout" value="$(arg timeout)"/>
+    <remap from="depth_cloud_cam1" to="$(arg cam1_topic)"/>
+    <remap from="depth_cloud_cam2" to="$(arg cam2_topic)"/>
+  </node>
+
+</launch>
