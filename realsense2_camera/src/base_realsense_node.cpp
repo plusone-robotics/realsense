@@ -1392,6 +1392,10 @@ void BaseRealSenseNode::imu_callback_sync(rs2::frame frame, imu_sync_method sync
             imu_msgs.pop_front();
         }
     }
+    else
+    {
+        clearMonitoredTopic(stream_index, TOPIC_IMU);
+    }
     m_mutex.unlock();
 };
 
