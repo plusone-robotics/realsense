@@ -39,9 +39,13 @@ namespace realsense2_camera
         diagnostic_updater_.add(frequency_status_);
       }
 
-      void update()
+      void tick()
       {
         frequency_status_.tick();
+      }
+
+      void update()
+      {
         diagnostic_updater_.update();
       }
 
@@ -245,6 +249,7 @@ namespace realsense2_camera
         rs2_stream rs2_string_to_stream(std::string str);
         void startMonitoring();
         void publish_temperature();
+        void publish_frequency_update();
 
         rs2::device _dev;
         std::map<stream_index_pair, rs2::sensor> _sensors;
