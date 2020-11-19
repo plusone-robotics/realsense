@@ -87,6 +87,7 @@ BaseRealSenseNode::BaseRealSenseNode(ros::NodeHandle& nodeHandle,
     _namespace(getNamespaceStr())
 {
     // Types for depth stream
+    _format[RS2_STREAM_DEPTH] = RS2_FORMAT_Z16;
     _image_format[RS2_STREAM_DEPTH] = CV_16UC1;    // CVBridge type
     _encoding[RS2_STREAM_DEPTH] = sensor_msgs::image_encodings::TYPE_16UC1; // ROS message type
     _unit_step_size[RS2_STREAM_DEPTH] = sizeof(uint16_t); // sensor_msgs::ImagePtr row step size
@@ -1069,7 +1070,7 @@ void BaseRealSenseNode::enable_devices()
             {
                 auto video_profile = profile.as<rs2::video_stream_profile>();
                 ROS_DEBUG_STREAM("Sensor profile: " <<
-                                    "stream_type: " << rs2_stream_to_string(elem.first) << "(" << elem.second << ")" <<
+                                    "stream_type: " << rs2_stream_to_string(video_profile.stream_type()) << "(" << video_profile.stream_index() << ")" <<
                                     "Format: " << video_profile.format() <<
                                     ", Width: " << video_profile.width() <<
                                     ", Height: " << video_profile.height() <<
@@ -1101,7 +1102,8 @@ void BaseRealSenseNode::enable_devices()
                     ", Stream Index: " << elem.second <<
                     ", Width: " << _width[elem] <<
                     ", Height: " << _height[elem] <<
-                    ", FPS: " << _fps[elem]);
+                    ", FPS: " << _fps[elem] << 
+                    ", Format: " << ((_format.find(elem.first) == _format.end())? "None":rs2_format_to_string(rs2_format(_format[elem.first]))));
                 _enable[elem] = false;
             }
         }
@@ -2146,6 +2148,7 @@ void BaseRealSenseNode::publishStaticTransforms()
         _depth_to_other_extrinsics[INFRA2] = ex;
         _depth_to_other_extrinsics_publishers[INFRA2].publish(rsExtrinsicsToMsg(ex, frame_id));
     }
+
 }
 
 void BaseRealSenseNode::publishDynamicTransforms()
@@ -2429,6 +2432,8 @@ void BaseRealSenseNode::publishFrame(rs2::frame f, const ros::Time& t,
     ++(seq[stream]);
     auto& info_publisher = info_publishers.at(stream);
     auto& image_publisher = image_publishers.at(stream);
+
+    image_publisher.second->tick();
     if(0 != info_publisher.getNumSubscribers() ||
        0 != image_publisher.first.getNumSubscribers())
     {
@@ -2452,8 +2457,6 @@ void BaseRealSenseNode::publishFrame(rs2::frame f, const ros::Time& t,
         info_publisher.publish(cam_info);
 
         image_publisher.first.publish(img);
-        image_publisher.second->update();
-
         // ROS_INFO_STREAM("fid: " << cam_info.header.seq << ", time: " << std::setprecision (20) << t.toSec());
         ROS_DEBUG("%s stream published", rs2_stream_to_string(f.get_profile().stream_type()));
 
@@ -2504,7 +2507,7 @@ void BaseRealSenseNode::startMonitoring()
         _temperature_nodes.push_back({option, std::make_shared<TemperatureDiagnostics>(rs2_option_to_string(option), _serial_no )});
     }
 
-    int time_interval(10000);
+    int time_interval(1000);
     std::function<void()> func = [this, time_interval](){
         std::mutex mu;
         std::unique_lock<std::mutex> lock(mu);
@@ -2513,6 +2516,7 @@ void BaseRealSenseNode::startMonitoring()
             if (_is_running)
             {
                 publish_temperature();
+                publish_frequency_update();
             }
         }
     };
@@ -2537,6 +2541,14 @@ void BaseRealSenseNode::publish_temperature()
                 ROS_DEBUG_STREAM("Failed checking for temperature." << std::endl << e.what());
             }
         }
+    }
+}
+
+void BaseRealSenseNode::publish_frequency_update()
+{
+    for (auto &image_publisher : _image_publishers)
+    {
+        image_publisher.second.second->update();
     }
 }
 
