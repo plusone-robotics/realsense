@@ -270,7 +270,7 @@ void RealSenseNodeFactory::onInit()
 	auto privateNh = getPrivateNodeHandle();
 
 	privateNh.param("initial_reset", _initial_reset, false);
-	_init_timer = nh.createWallTimer(ros::WallDuration(1.0), &RealSenseNodeFactory::initialize, this, true);
+	_init_timer = nh.createWallTimer(ros::WallDuration(0.1), &RealSenseNodeFactory::initialize, this, true);
 }
 
 void RealSenseNodeFactory::initialize(const ros::WallTimerEvent &ignored)
