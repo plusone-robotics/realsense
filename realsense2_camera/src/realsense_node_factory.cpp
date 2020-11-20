@@ -270,7 +270,7 @@ void RealSenseNodeFactory::onInit()
 	auto privateNh = getPrivateNodeHandle();
 
 	privateNh.param("initial_reset", _initial_reset, false);
-	_init_timer = nh.createWallTimer(ros::WallDuration(1.0), &RealSenseNodeFactory::initialize, this, true);
+	_init_timer = nh.createWallTimer(ros::WallDuration(0.1), &RealSenseNodeFactory::initialize, this, true);
 }
 
 void RealSenseNodeFactory::initialize(const ros::WallTimerEvent &ignored)
@@ -316,16 +316,20 @@ void RealSenseNodeFactory::initialize(const ros::WallTimerEvent &ignored)
 
 		if (!rosbag_filename.empty())
 		{
-			ROS_INFO_STREAM("publish topics from rosbag file: " << rosbag_filename.c_str());
-			auto pipe = std::make_shared<rs2::pipeline>();
-			rs2::config cfg;
-			cfg.enable_device_from_file(rosbag_filename.c_str(), false);
-			cfg.enable_all_streams();
-			pipe->start(cfg); //File will be opened in read mode at this point
-			_device = pipe->get_active_profile().get_device();
-			_realSenseNode = std::shared_ptr<BaseRealSenseNode>(new BaseRealSenseNode(nh, privateNh, _device, _serial_no));
-			_realSenseNode->publishTopics();
-			_realSenseNode->registerDynamicReconfigCb(nh);
+			{
+				ROS_INFO_STREAM("publish topics from rosbag file: " << rosbag_filename.c_str());
+				auto pipe = std::make_shared<rs2::pipeline>();
+				rs2::config cfg;
+				cfg.enable_device_from_file(rosbag_filename.c_str(), false);
+				cfg.enable_all_streams();
+				pipe->start(cfg); //File will be opened in read mode at this point
+				_device = pipe->get_active_profile().get_device();
+				_serial_no = _device.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER);
+			}
+			if (_device)
+			{
+				StartDevice();
+			}
 		}
 		else
 		{
