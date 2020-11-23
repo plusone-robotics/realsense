@@ -270,10 +270,15 @@ void RealSenseNodeFactory::onInit()
 	auto privateNh = getPrivateNodeHandle();
 
 	privateNh.param("initial_reset", _initial_reset, false);
-	_init_timer = nh.createWallTimer(ros::WallDuration(0.1), &RealSenseNodeFactory::initialize, this, true);
+	initialize();
 }
 
-void RealSenseNodeFactory::initialize(const ros::WallTimerEvent &ignored)
+void RealSenseNodeFactory::initCallback(const ros::WallTimerEvent &ignored)
+{
+	initialize();
+}
+
+void RealSenseNodeFactory::initialize()
 {
 	_device = rs2::device();
 	try
@@ -545,7 +550,7 @@ bool RealSenseNodeFactory::reset()
 		ROS_ERROR_STREAM("Exception: " << e.what());
 	}
 
-	_init_timer = getNodeHandle().createWallTimer(ros::WallDuration(1.0), &RealSenseNodeFactory::initialize, this, true);
+	_init_timer = getNodeHandle().createWallTimer(ros::WallDuration(1.0), &RealSenseNodeFactory::initCallback, this, true);
 	return true;
 }
 
