@@ -280,7 +280,6 @@ void RealSenseNodeFactory::initCallback(const ros::WallTimerEvent &ignored)
 
 void RealSenseNodeFactory::initialize()
 {
-	_device = rs2::device();
 	try
 	{
 #ifdef BPDEBUG
@@ -471,7 +470,6 @@ void RealSenseNodeFactory::StartDevice()
 	}
 	assert(_realSenseNode);
 	_realSenseNode->publishTopics();
-	_realSenseNode->registerDynamicReconfigCb(nh);
 
 	_initialized = true;
 
