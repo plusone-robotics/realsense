@@ -430,7 +430,7 @@ void RealSenseNodeFactory::dataMonitor(const ros::TimerEvent &e)
 
 void RealSenseNodeFactory::StartDevice()
 {
-	if (_realSenseNode) _realSenseNode.reset();  // This line is obtained from the latest upstream.
+	if (_realSenseNode) _realSenseNode.reset();
 	try
 	{
 	ros::NodeHandle nh = getNodeHandle();

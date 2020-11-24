@@ -903,8 +903,6 @@ void BaseRealSenseNode::setupPublishers()
         _synced_imu_publisher = std::make_shared<SyncedImuPublisher>(_node_handle.advertise<sensor_msgs::Imu>("imu", 5));
         _synced_imu_publisher->Enable(_hold_back_imu_for_frames);
 
-        _info_publisher[GYRO] = _node_handle.advertise<IMUInfo>("imu_info", 1, true);
-
         addMonitoredTopic(GYRO, TOPIC_IMU, "imu");
         addMonitoredTopic(GYRO, TOPIC_INFO, "imu_info");
     }
@@ -913,7 +911,6 @@ void BaseRealSenseNode::setupPublishers()
         if (_enable[GYRO])
         {
             _imu_publishers[GYRO] = _node_handle.advertise<sensor_msgs::Imu>("gyro/sample", 100);
-            _info_publisher[GYRO] = _node_handle.advertise<IMUInfo>("gyro/imu_info", 1, true);
             addMonitoredTopic(GYRO, TOPIC_IMU, "gyro/sample");
             addMonitoredTopic(GYRO, TOPIC_INFO, "gyro/imu_info");
         }
@@ -921,7 +918,6 @@ void BaseRealSenseNode::setupPublishers()
         if (_enable[ACCEL])
         {
             _imu_publishers[ACCEL] = _node_handle.advertise<sensor_msgs::Imu>("accel/sample", 100);
-            _info_publisher[ACCEL] = _node_handle.advertise<IMUInfo>("accel/imu_info", 1, true);
             addMonitoredTopic(GYRO, TOPIC_IMU, "accel/sample");
             addMonitoredTopic(GYRO, TOPIC_INFO, "accel/imu_info");
         }
