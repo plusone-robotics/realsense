@@ -1720,11 +1720,15 @@ void BaseRealSenseNode::frame_callback(rs2::frame frame)
 
                 if (f.is<rs2::points>())
                 {
-                    if (_pointcloud)
+                    if (0 != _pointcloud_publisher.getNumSubscribers())
                     {
                         ROS_DEBUG("Publish pointscloud");
                         publishPointCloud(f.as<rs2::points>(), t, frameset);
                         updateMonitoredTopic(DEPTH, TOPIC_POINTS);
+                    }
+                    else
+                    {
+                        clearMonitoredTopic(DEPTH, TOPIC_POINTS);
                     }
                     continue;
                 }
