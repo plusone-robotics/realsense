@@ -1,4 +1,4 @@
-#include "../include/base_realsense_node.h"
+#include <realsense2_camera/base_realsense_node.h>
 #include "assert.h"
 #include <boost/algorithm/string.hpp>
 #include <algorithm>
@@ -1723,12 +1723,60 @@ void BaseRealSenseNode::multiple_message_callback(rs2::frame frame, imu_sync_met
     }
 }
 
-void BaseRealSenseNode::setBaseTime(double frame_time, bool warn_no_metadata)
+bool BaseRealSenseNode::setBaseTime(double frame_time, bool warn_no_metadata)
 {
     ROS_WARN_COND(warn_no_metadata, "Frame metadata isn't available! (frame_timestamp_domain = RS2_TIMESTAMP_DOMAIN_SYSTEM_TIME)");
 
-    _ros_time_base = ros::Time::now();
-    _camera_time_base = frame_time;
+    if (warn_no_metadata == RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK)
+    {
+        ROS_WARN("frame's time domain is HARDWARE_CLOCK. Timestamps may reset periodically.");
+        _ros_time_base = ros::Time::now();
+        _camera_time_base = frame_time;
+        return true;
+    }
+    return false;
+}
+
+uint64_t BaseRealSenseNode::millisecondsToNanoseconds(double timestamp_ms)
+{
+        // modf breaks input into an integral and fractional part
+        double int_part_ms, fract_part_ms;
+        fract_part_ms = modf(timestamp_ms, &int_part_ms);
+
+        //convert both parts to ns
+        static constexpr uint64_t milli_to_nano = 1000000;
+        uint64_t int_part_ns = static_cast<uint64_t>(int_part_ms) * milli_to_nano;
+        uint64_t fract_part_ns = static_cast<uint64_t>(std::round(fract_part_ms * milli_to_nano));
+
+        return int_part_ns + fract_part_ns;
+}
+
+ros::Time BaseRealSenseNode::frameSystemTimeSec(rs2::frame frame)
+{
+    double timestamp_ms = frame.get_timestamp();
+    if (frame.get_frame_timestamp_domain() == RS2_TIMESTAMP_DOMAIN_HARDWARE_CLOCK)
+    {
+        auto elapsed_camera_ns = millisecondsToNanoseconds(timestamp_ms - _camera_time_base);
+
+        /*
+        Fixing deprecated-declarations compilation warning.
+        Duration(rcl_duration_value_t) is deprecated in favor of 
+        static Duration::from_nanoseconds(rcl_duration_value_t)
+        starting from GALACTIC.
+        */
+#if defined(FOXY) || defined(ELOQUENT) || defined(DASHING)
+        auto duration = ros::Duration(elapsed_camera_ns);
+#else
+        ros::Duration t;
+        auto duration = t.fromNSec(elapsed_camera_ns);
+#endif
+
+        return ros::Time(_ros_time_base + duration);
+    }
+    else
+    {
+        return ros::Time(millisecondsToNanoseconds(timestamp_ms));
+    }
 }
 
 void BaseRealSenseNode::setupStreams()

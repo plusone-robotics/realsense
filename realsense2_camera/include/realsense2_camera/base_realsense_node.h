@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include "../include/realsense_node_factory.h"
+#include <realsense2_camera/realsense_node_factory.h>
 #include <ddynamic_reconfigure/ddynamic_reconfigure.h>
 
 #include <diagnostic_updater/diagnostic_updater.h>
@@ -196,7 +196,9 @@ namespace realsense2_camera
         void enable_devices();
         void setupFilters();
         void setupStreams();
-        void setBaseTime(double frame_time, bool warn_no_metadata);
+        bool setBaseTime(double frame_time, bool warn_no_metadata);
+        ros::Time frameSystemTimeSec(rs2::frame frame);
+        uint64_t millisecondsToNanoseconds(double timestamp_ms);
         cv::Mat& fix_depth_scale(const cv::Mat& from_image, cv::Mat& to_image);
         void clip_depth(rs2::depth_frame depth_frame, float clipping_dist);
         void updateStreamCalibData(const rs2::video_stream_profile& video_profile);

@@ -95,11 +95,11 @@ catkin_package(
     )
 
 add_library(${PROJECT_NAME}
-    include/constants.h
-    include/realsense_node_factory.h
-    include/base_realsense_node.h
-    include/t265_realsense_node.h
-    include/camera_driver.h
+    include/realsense2_camera/constants.h
+    include/realsense2_camera/realsense_node_factory.h
+    include/realsense2_camera/base_realsense_node.h
+    include/realsense2_camera/t265_realsense_node.h
+    include/realsense2_camera/camera_driver.h
     src/realsense_node_factory.cpp
     src/base_realsense_node.cpp
     src/t265_realsense_node.cpp
@@ -135,7 +135,7 @@ install(TARGETS ${PROJECT_NAME}
     )
 
 # Install header files
-install(DIRECTORY include/
+install(DIRECTORY include/realsense2_camera/
     DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
     )
 

@@ -1,4 +1,4 @@
-#include <camera_driver.h>
+#include <realsense2_camera/camera_driver.h>
 
 #include <chrono>
 #include <condition_variable>
@@ -269,7 +269,8 @@ void PolledRealsenseNode::publish(stream_index_pair stream, const sensor_msgs::I
 
 double PolledRealsenseNode::getStamp(rs2::frame frame)
 {
-    return frameSystemTimeSec(frame);
+    ros::Time x = frameSystemTimeSec(frame);
+    return x.toSec();
 }
 
 void PolledRealsenseNode::stopStreams()
