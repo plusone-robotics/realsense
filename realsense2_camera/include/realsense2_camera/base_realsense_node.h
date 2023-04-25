@@ -196,7 +196,7 @@ namespace realsense2_camera
         void enable_devices();
         void setupFilters();
         void setupStreams();
-        bool setBaseTime(double frame_time, bool warn_no_metadata);
+        bool setBaseTime(double frame_time, rs2_timestamp_domain time_domain);
         ros::Time frameSystemTimeSec(rs2::frame frame);
         uint64_t millisecondsToNanoseconds(double timestamp_ms);
         cv::Mat& fix_depth_scale(const cv::Mat& from_image, cv::Mat& to_image);
