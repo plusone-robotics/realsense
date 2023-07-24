@@ -221,10 +221,12 @@ void RealSenseNodeFactory::getDevice(rs2::device_list list)
 
             ROS_INFO("Resetting device...");
             _device.hardware_reset();
-            while(!reset_complete)
+            auto start_time = std::chrono::steady_clock::now();
+            while(!reset_complete && std::chrono::steady_clock::now() - start_time < MAX_RESET_WAIT)
             {
-                ros::Duration(0.1).sleep();
+                std::this_thread::sleep_for(RESET_SLEEP_INTERVAL);
             }
+            ROS_INFO(reset_complete ? "Reset complete" : "Timed out waiting on reset event. Starting camera...");
             _device = rs2::device();
         }
         catch(const std::exception& ex)
