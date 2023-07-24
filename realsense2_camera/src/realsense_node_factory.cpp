@@ -132,7 +132,7 @@ void RealSenseNodeFactory::getDevice(rs2::device_list list)
 				}
 				else
 				{
-					ROS_INFO_STREAM("Device with port number " << port_id << " was found.");					
+					ROS_INFO_STREAM("Device with port number " << port_id << " was found.");
 				}
 				bool found_device_type(true);
 				if (!_device_type.empty())
@@ -201,20 +201,37 @@ void RealSenseNodeFactory::getDevice(rs2::device_list list)
 		_ctx.unload_tracking_module();
 	}
 
-	if (_device && _initial_reset)
-	{
-		_initial_reset = false;
-		try
-		{
-			ROS_INFO("Resetting device...");
-			_device.hardware_reset();
-			_device = rs2::device();
-		}
-		catch(const std::exception& ex)
-		{
-			ROS_WARN_STREAM("An exception has been thrown: " << ex.what());
-		}
-	}
+    if (_device && _initial_reset)
+    {
+        _initial_reset = false;
+        bool reset_complete(false);
+        try
+        {
+            rs2::context contex;
+            contex.set_devices_changed_callback([&](rs2::event_information& info)
+            {
+            // loop through all new devices
+            for (auto&& dev : info.get_new_devices())
+            {
+                auto dev_serial_no = dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER);
+                reset_complete = dev_serial_no == _serial_no;
+            }
+            });
+
+
+            ROS_INFO("Resetting device...");
+            _device.hardware_reset();
+            while(!reset_complete)
+            {
+                ros::Duration(0.1).sleep();
+            }
+            _device = rs2::device();
+        }
+        catch(const std::exception& ex)
+        {
+            ROS_WARN_STREAM("An exception has been thrown: " << ex.what());
+        }
+    }
 }
 
 void RealSenseNodeFactory::change_device_callback(rs2::event_information& info)
