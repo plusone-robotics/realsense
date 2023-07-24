@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(realsense2_camera)
-add_compile_options(-std=c++11)
+add_compile_options(-std=c++17)
 
 option(BUILD_WITH_OPENMP "Use OpenMP" OFF)
 option(SET_USER_BREAK_AT_STARTUP "Set user wait point in startup (for debug)" OFF)
@@ -62,7 +62,7 @@ endif()
 
 if (WIN32)
 else()
-set(CMAKE_CXX_FLAGS "-fPIE -fPIC -std=c++11 -D_FORTIFY_SOURCE=2 -fstack-protector -Wformat -Wformat-security -Wall ${CMAKE_CXX_FLAGS}")
+set(CMAKE_CXX_FLAGS "-fPIE -fPIC -std=c++17 -D_FORTIFY_SOURCE=2 -fstack-protector -Wformat -Wformat-security -Wall ${CMAKE_CXX_FLAGS}")
 endif()
 
 add_message_files(
@@ -128,7 +128,7 @@ target_link_libraries(${PROJECT_NAME}
 if(WIN32)
 set_target_properties(${realsense2_LIBRARY} PROPERTIES MAP_IMPORTED_CONFIG_RELWITHDEBINFO RELEASE)
 target_link_libraries(${PROJECT_NAME}
-    realsense2::realsense2 
+    realsense2::realsense2
     realsense2::realsense-file
     )
 endif()
@@ -160,4 +160,3 @@ install(DIRECTORY rviz/
 install(FILES nodelet_plugins.xml
     DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
     )
-
