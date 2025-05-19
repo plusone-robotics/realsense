@@ -151,7 +151,7 @@ BaseRealSenseNode::~BaseRealSenseNode()
     }
 
     std::set<std::string> module_names;
-    for (const std::pair<stream_index_pair, std::vector<rs2::stream_profile>>& profile : _enabled_profiles)
+    for (const std::pair<const stream_index_pair, std::vector<rs2::stream_profile>>& profile : _enabled_profiles)
     {
         try
         {
@@ -176,7 +176,7 @@ void BaseRealSenseNode::toggleSensors(bool enabled)
   {
     std::map<std::string, std::vector<rs2::stream_profile> > profiles;
     std::map<std::string, rs2::sensor> active_sensors;
-    for (const std::pair<stream_index_pair, std::vector<rs2::stream_profile>>& profile : _enabled_profiles)
+    for (const std::pair<const stream_index_pair, std::vector<rs2::stream_profile>>& profile : _enabled_profiles)
     {
         std::string module_name = _sensors[profile.first].get_info(RS2_CAMERA_INFO_NAME);
         ROS_INFO_STREAM("insert " << rs2_stream_to_string(profile.second.begin()->stream_type())
@@ -187,7 +187,7 @@ void BaseRealSenseNode::toggleSensors(bool enabled)
         active_sensors[module_name] = _sensors[profile.first];
     }
 
-    for (const std::pair<std::string, std::vector<rs2::stream_profile> >& sensor_profile : profiles)
+    for (const std::pair<const std::string, std::vector<rs2::stream_profile> >& sensor_profile : profiles)
     {
         std::string module_name = sensor_profile.first;
         rs2::sensor sensor = active_sensors[module_name];
@@ -202,7 +202,7 @@ void BaseRealSenseNode::toggleSensors(bool enabled)
   else
   {
     std::set<std::string> module_names;
-    for (const std::pair<stream_index_pair, std::vector<rs2::stream_profile>>& profile : _enabled_profiles)
+    for (const std::pair<const stream_index_pair, std::vector<rs2::stream_profile>>& profile : _enabled_profiles)
     {
         std::string module_name = _sensors[profile.first].get_info(RS2_CAMERA_INFO_NAME);
         std::pair< std::set<std::string>::iterator, bool> res = module_names.insert(module_name);
@@ -413,7 +413,7 @@ void BaseRealSenseNode::readAndSetDynamicParam(ros::NodeHandle& nh1, std::shared
 
 void BaseRealSenseNode::registerAutoExposureROIOptions(ros::NodeHandle& nh)
 {
-    for (const std::pair<stream_index_pair, std::vector<rs2::stream_profile>>& profile : _enabled_profiles)
+    for (const std::pair<const stream_index_pair, std::vector<rs2::stream_profile>>& profile : _enabled_profiles)
     {
         rs2::sensor sensor = _sensors[profile.first];
         std::string module_base_name(sensor.get_info(RS2_CAMERA_INFO_NAME));
@@ -937,7 +937,7 @@ void BaseRealSenseNode::setupDevice()
         }
 
         // Update "enable" map
-        for (std::pair<stream_index_pair, bool> const& enable : _enable )
+        for (std::pair<const stream_index_pair, bool> const& enable : _enable )
         {
             const stream_index_pair& stream_index(enable.first);
             if (enable.second && _sensors.find(stream_index) == _sensors.end())
@@ -1845,7 +1845,7 @@ void BaseRealSenseNode::setupStreams()
         // Streaming IMAGES
         std::map<std::string, std::vector<rs2::stream_profile> > profiles;
         std::map<std::string, rs2::sensor> active_sensors;
-        for (const std::pair<stream_index_pair, std::vector<rs2::stream_profile>>& profile : _enabled_profiles)
+        for (const std::pair<const stream_index_pair, std::vector<rs2::stream_profile>>& profile : _enabled_profiles)
         {
             std::string module_name = _sensors[profile.first].get_info(RS2_CAMERA_INFO_NAME);
             ROS_DEBUG_STREAM("insert " << rs2_stream_to_string(profile.second.begin()->stream_type())
@@ -1856,7 +1856,7 @@ void BaseRealSenseNode::setupStreams()
             active_sensors[module_name] = _sensors[profile.first];
         }
 
-        for (const std::pair<std::string, std::vector<rs2::stream_profile> >& sensor_profile : profiles)
+        for (const std::pair<const std::string, std::vector<rs2::stream_profile> >& sensor_profile : profiles)
         {
             std::string module_name = sensor_profile.first;
             rs2::sensor sensor = active_sensors[module_name];
