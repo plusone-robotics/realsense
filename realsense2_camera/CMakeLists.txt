@@ -62,8 +62,9 @@ endif()
 
 if (WIN32)
 else()
+
 set(CMAKE_CXX_FLAGS "-fPIE -fPIC -std=c++17 -D_FORTIFY_SOURCE=2 -fstack-protector -Wformat -Wformat-security -Wall ${CMAKE_CXX_FLAGS}")
-endif()
+
 
 add_message_files(
     FILES
